@@ -1,0 +1,872 @@
+///daat99's World Teleporter (remade by XxSP1DERxX)
+///
+///changelog v1.1 ==> XxSP1DERxX
+///04/06/2005: Bug with Tokuno taking you to Trammel locations.
+///04/06/2005: Optimized the gump code.
+///
+///changelog v1.0 ==> remade by XxSP1DERxX
+///02/06/2005: Changed all boolean properties to 1 bitwise flag
+///02/06/2005: Added a global/local switch (so that admins can set their global settings )
+///02/06/2005: Optimized the Gump code to use "virtual pages"
+///02/06/2005: Optimized the Location list generation code
+///02/06/2005: Optimized the gump response code to use an algorithm
+///02/06/2005: Added triple redundant validity checks
+///02/06/2005: Added staff check
+///02/06/2005: Put Map hueing into a function to allow easy changing
+///02/06/2005: Created default global settings in the Initialize() function
+///
+///changelog v0.8
+///08/03/2005: fixed a warning.
+///08/03/2005: Fixed when you disable fel or tram it still showed them in the public moongate.
+///
+///changelog v0.7
+///08/03/2005: Added colors to Ilshenar Malas and Tokuno maps, Thanx Kiara for choosing the colors :)
+///07/03/2005: Added more locations to tokuno map.
+///07/03/2005: Added ilshenar shrines map.
+///07/03/2005: Added trammel and felucca public moongates.
+///
+///changelog v0.6
+///02/03/2005: Added a [WorldTeleGen command to generate the world teleporter in all the exits. It'll generate the teleporters only on the maps that set to true in the [props and delete all existing unmovable teles.
+///02/03/2005: Rewrote the teleporter with arrays and hash table to simplify the modifications and to shorten the code. (ThanX A Lot UOT) ;)
+///
+///changelog v0.5
+///24/02/2005: Added Spider Cave in Ilshenar.
+///
+///changelog v0.4
+///24/02/2005: Added a check not to play sounds if hidden staff member use it.
+///24/02/2005: Added a check to see if you're near the destination you selected (1 tile away) requested by Raider
+///24/02/2005: A few modifications to the teleporter code.
+///
+///changelog v0.3
+///23/02/2005: Added exodus dungeon, rock dungeon, solen hive and orc cave, thanx to Tark for requesting them :)
+///23/02/2005: Moved mook town to custom where it was supposed to be in the first place.
+///
+///changelog v0.2
+///22/02/2005: Fixed some typos, thanx Crepti ;)
+///
+///changelog v0.1
+///22/02/2005: Made by daat99.
+///
+///Made by daat99, v1.0 remade by XxSP1DERxX
+///Special thanks for XxSP1DERxX for rewriting and optimizing the code A LOT ;)
+///Special thanks for Kiara for the idea ;) (sorry I forgot you before).
+///Special thanks goes to UOT, Thraxus and Muzrin, thanx for the HUGE help guys.
+///Also thanx for Crepti (you tried to help me there with the gump hues ;) ).
+///Many of the locations were copied from Traveling Books script by Broze The Newb.
+///Thanx to Wolf for adding some locations into the mix.
+///
+///Description:
+///A moongate that hold all the locations and can be easily customized in the script.
+///Added a UseGlobal bool value for each teleporter, when set to false that particular teleporter will have independent settings then the rest.
+///Admin can turn on\off each map in the teleporter (effect all the teleporters in the world by default) via [props.
+///Can be set to allow reds in tram\ilsh\malas\tokuno or not via [props (AllowAllMurdr will allow reds in all maps otherwise only in fel).
+///The teleporter come with example custom map which is turned off by default, enable it with [props and set the locations inside the script.
+///Use [worldtelegen to generate world teleporters in all the active connections (if trammel is active it'll add teleporters to all the locatios in trammel).
+///
+///Enjoy :)
+
+using System;
+using System.Collections;
+using Server;
+using Server.Gumps;
+using Server.Network;
+using Server.Mobiles;
+using Joeku.SR;
+using Server.Commands;
+using Server.Commands.Generic;
+
+namespace Server.Items
+{
+	public class WorldTeleporter : Item
+	{
+		[Flags]
+		public enum OptFlags
+		{
+			None			= 0x0000,
+			Trammel			= 0x0001,
+			TramDungeons	= 0x0002,
+			Felucca			= 0x0004,
+			FelDungeons		= 0x0008,
+			PublicMoongates	= 0x0010,
+			Ilshenar		= 0x0020,
+			IlshenarShrines = 0x0040,
+			Malas			= 0x0080,
+			Tokuno			= 0x0100,
+			AllowReds		= 0x0200,
+			Custom			= 0x0400,
+			UseGlobal		= 0x0800
+		}
+		
+		
+
+		public static void Initialize()
+		{
+			//Global Default Flags for WorldTeleGen: 0x1FF
+			if ( m_GlobalFlags == OptFlags.None )
+			{
+				SetOptFlag( ref m_GlobalFlags, OptFlags.Trammel, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.TramDungeons, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.Felucca, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.FelDungeons, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.PublicMoongates, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.Ilshenar, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.IlshenarShrines, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.Malas, Core.AOS );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.Tokuno, Core.SE );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.Custom, true );
+				SetOptFlag( ref m_GlobalFlags, OptFlags.UseGlobal, true );
+			}
+
+			GlobalEntries.Add("Trammel", new MapEntry[]
+			{
+				new MapEntry("Britain", new Point3D(1434, 1699, 2), Map.Trammel ),
+				new MapEntry("Bucs Den", new Point3D(2705, 2162, 0), Map.Trammel ),
+				new MapEntry("Cove", new Point3D(2237, 1214, 0), Map.Trammel ),
+				new MapEntry("Delucia", new Point3D(5274, 3991, 37), Map.Trammel ),
+				new MapEntry("New Haven", new Point3D(3500, 2571, 14), Map.Trammel ),
+				new MapEntry("Haven", new Point3D(3626, 2611, 0), Map.Trammel ),
+				new MapEntry("Jhelom", new Point3D(1417, 3821, 0), Map.Trammel ),
+				new MapEntry("Magincia", new Point3D(3728, 2164, 20), Map.Trammel ),
+				new MapEntry("Minoc", new Point3D(2498, 561, 0), Map.Trammel ),
+				new MapEntry("Moonglow", new Point3D(4471, 1177, 0), Map.Trammel ),
+				new MapEntry("Nujel'm", new Point3D(3770, 1308, 0), Map.Trammel ),
+				new MapEntry("Papua", new Point3D(5729, 3208, -6), Map.Trammel ),
+				new MapEntry("Serpents Hold", new Point3D(2895, 3479, 15), Map.Trammel ),
+				new MapEntry("Skara Brae", new Point3D(596, 2138, 0), Map.Trammel ),
+				new MapEntry("Trinsic", new Point3D(1823, 2821, 0), Map.Trammel ),
+				new MapEntry("Vesper", new Point3D(2899, 676, 0), Map.Trammel ),
+				new MapEntry("Wind", new Point3D(1361, 895, 0), Map.Trammel ),
+				new MapEntry("Yew", new Point3D(542, 985, 0), Map.Trammel ),
+			//	new MapEntry("Britain", new Point3D(1434, 1699, 2), Map.Trammel )
+			});
+
+			GlobalEntries.Add("Trammel Dungeons", new MapEntry[]
+			{
+				new MapEntry("Covetous", new Point3D(2498, 921, 0), Map.Trammel ),
+				new MapEntry("Daemon Temple", new Point3D(4591, 3647, 80), Map.Trammel ),
+				new MapEntry("Deceit", new Point3D(4111, 434, 5), Map.Trammel ),
+				new MapEntry("Despise", new Point3D(1301, 1080, 0), Map.Trammel ),
+				new MapEntry("Destard", new Point3D(1176, 2640, 2), Map.Trammel ),
+				new MapEntry("Fire", new Point3D(2923, 3409, 8), Map.Trammel ),
+				new MapEntry("Hythloth", new Point3D(4721, 3824, 0), Map.Trammel ),
+				new MapEntry("Ice", new Point3D(1999, 81, 4), Map.Trammel ),
+				new MapEntry("Ophidian Temple", new Point3D(5766, 2634, 43), Map.Trammel ),
+				new MapEntry("Orc Caves", new Point3D(1017, 1429, 0), Map.Trammel ),
+				new MapEntry("Shame", new Point3D(511, 1565, 0), Map.Trammel ),
+				new MapEntry("Solen Hive", new Point3D(2607, 763, 0), Map.Trammel ),
+				new MapEntry("Terathan Keep", new Point3D(5451, 3143, -60), Map.Trammel ),
+				new MapEntry("Wrong", new Point3D(2043, 238, 10), Map.Trammel )
+			});
+
+			GlobalEntries.Add("Felucca", new MapEntry[]
+			{
+				new MapEntry("Britain", new Point3D(1434, 1699, 2), Map.Felucca ),
+				new MapEntry("Bucs Den", new Point3D(2705, 2162, 0), Map.Felucca ),
+				new MapEntry("Cove", new Point3D(2237, 1214, 0), Map.Felucca ),
+				new MapEntry("Delucia", new Point3D(5274, 3991, 37), Map.Felucca ),
+				new MapEntry("Jhelom", new Point3D(1417, 3821, 0), Map.Felucca ),
+				new MapEntry("Magincia", new Point3D(3728, 2164, 20), Map.Felucca ),
+				new MapEntry("Minoc", new Point3D(2498, 561, 0), Map.Felucca ),
+				new MapEntry("Moonglow", new Point3D(4471, 1177, 0), Map.Felucca ),
+				new MapEntry("Nujel'm", new Point3D(3770, 1308, 0), Map.Felucca ),
+				new MapEntry("Ocllo", new Point3D(3626, 2611, 0), Map.Felucca ),
+				new MapEntry("Papua", new Point3D(5729, 3208, -6), Map.Felucca ),
+				new MapEntry("Serpents Hold", new Point3D(2895, 3479, 15), Map.Felucca ),
+				new MapEntry("Skara Brae", new Point3D(596, 2138, 0), Map.Felucca ),
+				new MapEntry("Trinsic", new Point3D(1823, 2821, 0), Map.Felucca ),
+				new MapEntry("Vesper", new Point3D(2899, 676, 0), Map.Felucca ),
+				new MapEntry("Wind", new Point3D(1361, 895, 0), Map.Felucca ),
+				new MapEntry("Yew", new Point3D(542, 985, 0), Map.Felucca )
+			});
+
+			GlobalEntries.Add("Felucca Dungeons", new MapEntry[]
+			{
+				new MapEntry("Covetous", new Point3D(2498, 921, 0), Map.Felucca ),
+				new MapEntry("Daemon Temple", new Point3D(4591, 3647, 80), Map.Felucca ),
+				new MapEntry("Deceit", new Point3D(4111, 434, 5), Map.Felucca ),
+				new MapEntry("Despise", new Point3D(1301, 1080, 0), Map.Felucca ),
+				new MapEntry("Destard", new Point3D(1176, 2640, 2), Map.Felucca ),
+				new MapEntry("Fire", new Point3D(2923, 3409, 8), Map.Felucca ),
+				new MapEntry("Hythloth", new Point3D(4721, 3824, 0), Map.Felucca ),
+				new MapEntry("Ice", new Point3D(1999, 81, 4), Map.Felucca ),
+				new MapEntry("Ophidian Temple", new Point3D(5766, 2634, 43), Map.Felucca ),
+				new MapEntry("Orc Caves", new Point3D(1017, 1429, 0), Map.Felucca ),
+				new MapEntry("Shame", new Point3D(511, 1565, 0), Map.Felucca ),
+				new MapEntry("Solen Hive", new Point3D(2607, 763, 0), Map.Felucca ),
+				new MapEntry("Terathan Keep", new Point3D(5451, 3143, -60), Map.Felucca ),
+				new MapEntry("Wrong", new Point3D(2043, 238, 10), Map.Felucca )
+			});
+
+			GlobalEntries.Add("Public Moongates", new MapEntry[]
+			{
+				new MapEntry("Britain", new Point3D(1336, 1997, 5), Map.Trammel ),
+				new MapEntry("Haven", new Point3D(3763, 2771, 50), Map.Trammel ),
+				new MapEntry("Jhelom", new Point3D(1499, 3771, 5), Map.Trammel ),
+				new MapEntry("Magincia", new Point3D(3563, 2139, 34), Map.Trammel ),
+				new MapEntry("Minoc", new Point3D(2701, 692, 5), Map.Trammel ),
+				new MapEntry("Moonglow", new Point3D(4467, 1283, 5), Map.Trammel ),
+				new MapEntry("Skara Brae", new Point3D(643, 2067, 5), Map.Trammel ),
+				new MapEntry("Trinsic", new Point3D(1828, 2948, -20), Map.Trammel ),
+				new MapEntry("Yew", new Point3D(771, 752, 5), Map.Trammel ),
+				new MapEntry("Britain", new Point3D(1336, 1997, 5), Map.Felucca ),
+				new MapEntry("Buccaneer's Den", new Point3D(2711, 2234, 0), Map.Felucca ),
+				new MapEntry("Jhelom", new Point3D(1499, 3771, 5), Map.Felucca ),
+				new MapEntry("Magincia", new Point3D(3563, 2139, 34), Map.Felucca ),
+				new MapEntry("Minoc", new Point3D(2701, 692, 5), Map.Felucca ),
+				new MapEntry("Moonglow", new Point3D(4467, 1283, 5), Map.Felucca ),
+				new MapEntry("Skara Brae", new Point3D(643, 2067, 5), Map.Felucca ),
+				new MapEntry("Trinsic", new Point3D(1828, 2948, -20), Map.Felucca ),
+				new MapEntry("Yew", new Point3D(771, 752, 5), Map.Felucca )
+
+			});
+
+			GlobalEntries.Add("Ilshenar", new MapEntry[]
+			{
+				new MapEntry("Ankh Dungeon", new Point3D(576, 1150, -100), Map.Ilshenar ),
+				new MapEntry("Blood Dungeon", new Point3D(1747, 1171, -2), Map.Ilshenar ),
+				new MapEntry("Exodus Dungeon", new Point3D(854, 778, -80), Map.Ilshenar ),
+				new MapEntry("Gargoyle City", new Point3D(852, 602, -40), Map.Ilshenar ),
+				new MapEntry("Lakeshire", new Point3D(1203, 1124, -25), Map.Ilshenar ),
+				new MapEntry("Mistas", new Point3D(819, 1130, -29), Map.Ilshenar ),
+				new MapEntry("Montor", new Point3D(1706, 205, 104), Map.Ilshenar ),
+				new MapEntry("Rock Dungeon", new Point3D(1787, 572, 69), Map.Ilshenar ),
+				new MapEntry("Savage Camp", new Point3D(1151, 659, -80), Map.Ilshenar ),
+				new MapEntry("Sorceror's Dungeon", new Point3D(548, 462, -53), Map.Ilshenar ),
+				new MapEntry("Spectre Dungeon", new Point3D(1363, 1033, -8), Map.Ilshenar ),
+				new MapEntry("Spider Cave", new Point3D(1420, 913, -16), Map.Ilshenar ),
+				new MapEntry("Wisp Dungeon", new Point3D(651, 1302, -58), Map.Ilshenar )
+			});
+
+			GlobalEntries.Add("Ilshenar Shrines", new MapEntry[]
+			{
+				new MapEntry("Compassion Shrine", new Point3D(1215, 467, -13), Map.Ilshenar ),
+				new MapEntry("Honesty Shrine", new Point3D(722, 1366, -60), Map.Ilshenar ),
+				new MapEntry("Honor Shrine", new Point3D(744, 724, -28), Map.Ilshenar ),
+				new MapEntry("Humility Shrine", new Point3D(281, 1016, 0), Map.Ilshenar ),
+				new MapEntry("Justice Shrine", new Point3D(987, 1011, -32), Map.Ilshenar ),
+				new MapEntry("Sacrifice Shrine", new Point3D(1174, 1286, -30), Map.Ilshenar ),
+				new MapEntry("Spirituality Shrine", new Point3D(1532, 1340, -3), Map.Ilshenar ),
+				new MapEntry("Valor Shrine", new Point3D(528, 216, -45), Map.Ilshenar ),
+				new MapEntry("Choas Shrine", new Point3D(1721, 218, 96), Map.Ilshenar )
+			});
+
+			GlobalEntries.Add("Malas", new MapEntry[]
+			{
+				new MapEntry("Doom", new Point3D(2368, 1267, -85), Map.Malas ),
+				new MapEntry("Luna", new Point3D(1015, 527, -65), Map.Malas ),
+				new MapEntry("Orc Fort 1", new Point3D(912, 215, -90), Map.Malas ),
+				new MapEntry("Orc Fort 2", new Point3D(1678, 374, -50), Map.Malas ),
+				new MapEntry("Orc Fort 3", new Point3D(1375, 621, -86), Map.Malas ),
+				new MapEntry("Orc Fort 4", new Point3D(1184, 715, -89), Map.Malas ),
+				new MapEntry("Orc Fort 5", new Point3D(1279, 1324, -90), Map.Malas ),
+				new MapEntry("Orc Fort 6", new Point3D(1598, 1834, -107), Map.Malas ),
+				new MapEntry("Ruined Temple", new Point3D(1598, 1762, -110), Map.Malas ),
+				new MapEntry("Umbra", new Point3D(1997, 1386, -85), Map.Malas )
+			});
+
+			GlobalEntries.Add("Tokuno", new MapEntry[]
+			{
+				new MapEntry("Bushido Dojo", new Point3D(322, 430, 32), Map.Tokuno ),
+				new MapEntry("Crane Marsh", new Point3D(203, 985, 18), Map.Tokuno ),
+				new MapEntry("Fan Dancer's Dojo", new Point3D(970, 222, 23), Map.Tokuno ),
+				new MapEntry("Isamu-Jima", new Point3D(1169, 998, 41), Map.Tokuno ),
+				new MapEntry("Makoto-Jima", new Point3D(802, 1204, 25), Map.Tokuno ),
+				new MapEntry("Homare-Jima", new Point3D(270, 628, 15), Map.Tokuno ),
+				new MapEntry("Makoto Desert", new Point3D(724, 1050, 33), Map.Tokuno ),
+				new MapEntry("Makoto Zento", new Point3D(741, 1261, 30), Map.Tokuno ),
+				new MapEntry("Mt. Sho Castle", new Point3D(1234, 772, 3), Map.Tokuno ),
+				new MapEntry("Valor Shrine", new Point3D(1044, 523, 15), Map.Tokuno ),
+				new MapEntry("Yomotsu Mine", new Point3D(257, 786, 63), Map.Tokuno )
+			});
+
+			GlobalEntries.Add("Staff", new MapEntry[]//add locations to the staff map here
+			{
+				new MapEntry("Green Acres tram", new Point3D(5445, 1153, 0), Map.Trammel ),
+				new MapEntry("Green Acres fel", new Point3D(5445, 1153, 0), Map.Felucca ),
+				new MapEntry("Jail tram", new Point3D(5296, 1173, 0), Map.Trammel ),
+				new MapEntry("Jail fel", new Point3D(5296, 1173, 0), Map.Felucca ),
+				new MapEntry("Star Room tram", new Point3D(5146, 1774, 0), Map.Trammel ),
+				new MapEntry("Star Room fel", new Point3D(5146, 1774, 0), Map.Felucca )
+			});
+
+			GlobalEntries.Add("Custom", new MapEntry[] //add locations to the custom map here
+			{
+				new MapEntry("Auction House", new Point3D(1045, 570, -90), Map.Malas ),
+				new MapEntry("Dueling Room", new Point3D(5250, 1756, 0), Map.Felucca ),
+				new MapEntry("House Gates", new Point3D(616, 2113, 0), Map.Trammel ),
+				new MapEntry("Hue Room", new Point3D(5379, 1094, 0), Map.Trammel ),
+				new MapEntry("Mook Town", new Point3D(1069, 1443, -90), Map.Malas ),
+				new MapEntry("Taming Forest", new Point3D(902, 912, 0), Map.Trammel ),
+				new MapEntry("Gate Room", new Point3D(6079, 451, -22), Map.Felucca ),
+				new MapEntry("Champ Spawn Abyss", new Point3D(5256, 3325, 4), Map.Felucca ),
+				new MapEntry("Event Area", new Point3D(4703, 1146, 0), Map.Trammel )
+			});
+
+		}
+
+		public static int GenerateWorldTeleporters()
+		{
+			int gen = 0;
+
+			if (GetOptFlag( m_GlobalFlags, OptFlags.Trammel )) gen += GenerateEntry( "Trammel" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.TramDungeons )) gen += GenerateEntry( "Trammel Dungeons" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.Felucca )) gen += GenerateEntry( "Felucca" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.FelDungeons )) gen += GenerateEntry( "Felucca Dungeons" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.PublicMoongates)) gen += GenerateEntry( "Public Moongates" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.Ilshenar)) gen += GenerateEntry( "Ilshenar" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.IlshenarShrines)) gen += GenerateEntry( "Ilshenar Shrines" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.Malas) && Core.AOS) gen += GenerateEntry( "Malas" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.Tokuno) && Core.SE) gen += GenerateEntry( "Tokuno" );
+			if (GetOptFlag( m_GlobalFlags, OptFlags.Custom)) gen += GenerateEntry( "Custom" );
+
+			gen += GenerateEntry( "Staff" );
+
+			return gen;
+		}
+
+		private static int GenerateEntry( string map )
+		{
+			MapEntry[] me = (MapEntry[])GlobalEntries[map];
+			if ( me != null )
+			{
+				for (int i = 0; i < me.Length; i++)
+					new WorldTeleporter().MoveToWorld( me[i].Destination, me[i].Map );
+				return me.Length;
+			}
+			return 0;
+		}
+
+		public static Hashtable GlobalEntries = new Hashtable();
+		private OptFlags m_Flags;
+		private static OptFlags m_GlobalFlags;
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool Trammel{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.Trammel ); } set{ SetOptFlag( OptFlags.Trammel, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool TramDungeons{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.TramDungeons ); } set{ SetOptFlag( OptFlags.TramDungeons, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool Felucca{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.Felucca ); } set{ SetOptFlag( OptFlags.Felucca, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool FelDungeons{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.FelDungeons ); } set{ SetOptFlag( OptFlags.FelDungeons, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool PublicMoongates{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.PublicMoongates ); } set{ SetOptFlag( OptFlags.PublicMoongates, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool Ilshenar{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.Ilshenar ); } set{ SetOptFlag( OptFlags.Ilshenar, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool IlshenarShrines{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.IlshenarShrines ); } set{ SetOptFlag( OptFlags.IlshenarShrines, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool Malas{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.Malas ); } set{ SetOptFlag( OptFlags.Malas, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool Tokuno{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.Tokuno ); } set{ SetOptFlag( OptFlags.Tokuno, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool AllowReds{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.AllowReds ); } set{ SetOptFlag( OptFlags.AllowReds, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool Custom{ get{ return GetOptFlag( (UseGlobal ? m_GlobalFlags : m_Flags), OptFlags.Custom ); } set{ SetOptFlag( OptFlags.Custom, value ); } }
+
+		[CommandProperty(AccessLevel.Administrator)]
+		public bool UseGlobal{ get{ return GetOptFlag( m_Flags, OptFlags.UseGlobal ); } set{ SetOptFlag( ref m_Flags, OptFlags.UseGlobal, value ); } }
+
+		public void SetOptFlag( OptFlags toSet, bool value )
+		{
+			if ( UseGlobal )
+			{
+				if ( value )
+					m_GlobalFlags |= toSet;
+				else
+					m_GlobalFlags &= ~toSet;
+			}
+			else
+			{
+				if ( value )
+					m_Flags |= toSet;
+				else
+					m_Flags &= ~toSet;
+			}
+		}
+
+		public static void SetOptFlag( ref OptFlags flags, OptFlags toSet, bool value )
+		{
+			if ( value )
+				flags |= toSet;
+			else
+				flags &= ~toSet;
+		}
+
+		public static bool GetOptFlag( OptFlags flags, OptFlags flag )
+		{
+			return ( (flags & flag) != 0 );
+		}
+
+		[Constructable]
+		public WorldTeleporter() : this ( (int)m_GlobalFlags )
+		{
+		}
+
+		[Constructable]
+		public WorldTeleporter( int flags ) : base( 19403 )
+		{
+			Movable = false;
+			Hue = 0;
+			Name = "World Teleporter";
+			Light = LightType.Circle300;
+			m_Flags = (OptFlags)flags;
+		}
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( !from.Player )
+				return;
+			UseTeleporter(from);
+		}
+
+		public override bool OnMoveOver( Mobile from )
+		{
+			return !from.Player || UseTeleporter(from);
+		}
+
+		public bool UseTeleporter( Mobile m )
+		{
+			if ( m.Criminal )
+				m.SendLocalizedMessage( 1005561, "", 0x22 ); // Thou'rt a criminal and cannot escape so easily.
+			else if ( Server.Spells.SpellHelper.CheckCombat( m ) )
+				m.SendLocalizedMessage( 1005564, "", 0x22 ); // Wouldst thou flee during the heat of battle??
+			else if ( m.Spell != null )
+				m.SendLocalizedMessage( 1049616 ); // You are too busy to do that at the moment.
+			else
+			{
+				m.CloseGump( typeof( WorldTeleporterGump ) );
+				m.SendGump( new WorldTeleporterGump( m, this, 0 ) );
+
+				if ( !m.Hidden || m.AccessLevel == AccessLevel.Player )
+					Effects.PlaySound( m.Location, m.Map, 0x20E );
+				return true;
+			}
+			return false;
+		}
+
+		public WorldTeleporter( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 2 ); // version
+
+			//version 2
+			writer.Write( (int) m_Flags );
+			writer.Write( (int) m_GlobalFlags );
+
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+			switch (version)
+			{
+				case 2:
+				{
+					m_Flags = (OptFlags)reader.ReadInt();
+					m_GlobalFlags = (OptFlags)reader.ReadInt();
+					break;
+				}
+				case 1:
+				{
+					SetOptFlag( ref m_Flags, OptFlags.IlshenarShrines, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.PublicMoongates, reader.ReadBool() );
+					goto case 0;
+				}
+				case 0:
+				{
+					SetOptFlag( ref m_Flags, OptFlags.Trammel, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.TramDungeons, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.Felucca, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.FelDungeons, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.Ilshenar, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.Malas, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.Tokuno, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.AllowReds, reader.ReadBool() );
+					SetOptFlag( ref m_Flags, OptFlags.Custom, reader.ReadBool() );
+					UseGlobal = true;
+					break;
+				}
+			}
+		}
+	}
+
+	public class WorldTeleporterGump : Gump
+	{
+		private WorldTeleporter m_WorldTeleporter;
+		private int m_Page;
+		private bool m_Reds, m_HasLBR, m_HasAOS, m_HasSE;
+		
+		//public int Xo;
+		//public int xo = 200;
+
+		public WorldTeleporterGump( Mobile from, WorldTeleporter WT, int page ) : base( 100, 100 )
+		{
+			ClientFlags flags = (from.NetState == null ? ClientFlags.None : from.NetState.Flags);
+
+			m_WorldTeleporter = WT;
+			m_Page = page;
+			 m_HasLBR = ((int)flags & 0x04) != 0;
+   			m_HasAOS = ((int)flags & 0x08) != 0;
+   			m_HasSE = ((int)flags & 0x10) != 0;
+			m_Reds = (from.Kills < 5 || WT.AllowReds);
+
+			//Did they press an invalid button or supply an invalid argument?
+			if ( page < 0 || page > 11 )
+				page = 0;
+
+			AddPage( 0 );
+			//AddBackground( 0, 0, 660, 404, 3500 ); //white
+			///AddBackground( 0, 0, 450, 404, 2620 ); //
+			AddBackground( 0, 0, 450, 404, 5054 ); //
+			AddImage(143, 139, 1418); // map
+			AddAlphaRegion( 5, 5, 440, 394 );
+
+			//AddImage(267, 10, 5528); // map
+			//AddImage(45, 30, 5609); // globe
+
+			//AddHtmlLocalized( 10, 10, 200, 20, 1012011, false, false ); // Pick your destination:
+
+			int p = 1;
+
+			if ( WT.Trammel && m_Reds )
+			{
+				GenerateMapListing( 1 );
+				AddPageButton( "Trammel", Map.Trammel, p++, 1 );
+			}
+
+			if ( WT.TramDungeons && m_Reds )
+			{
+				GenerateMapListing( 2 );
+				AddPageButton( "Trammel Dungeons", Map.Trammel, p++, 2 );
+			}
+
+			if ( WT.Felucca )
+			{
+				GenerateMapListing( 3 );
+				AddPageButton( "Felucca", Map.Felucca, p++, 3 );
+			}
+
+			if ( WT.FelDungeons )
+			{
+				GenerateMapListing( 4 );
+				AddPageButton( "Felucca Dungeons", Map.Felucca, p++, 4 );
+			}
+
+			if ( WT.PublicMoongates && (WT.Felucca || (WT.Trammel && m_Reds)) )
+			{
+				GenerateMapListing( 5 );
+				AddPageButton( "<basefont color=#FFFFFF>Public Moongates</basefont>", null, p++, 5 );
+			}
+
+			if ( WT.Ilshenar && m_Reds && m_HasLBR )
+			{
+				GenerateMapListing( 6 );
+				AddPageButton( "Ilshenar", Map.Ilshenar, p++, 6 );
+			}
+
+			if ( WT.IlshenarShrines && m_Reds && m_HasLBR )
+			{
+				GenerateMapListing( 7 );
+				AddPageButton( "Ilshenar Shrines", Map.Ilshenar, p++, 7 );
+			}
+
+			if ( WT.Malas && m_Reds && Core.AOS && m_HasAOS )
+			{
+				GenerateMapListing( 8 );
+				AddPageButton( "Malas", Map.Malas, p++, 8 );
+			}
+
+			if ( WT.Tokuno && m_Reds && Core.SE && m_HasSE )
+			{
+				GenerateMapListing( 9 );
+				AddPageButton( "Tokuno", Map.Tokuno, p++, 9 );
+			}
+
+			if ( from.AccessLevel > AccessLevel.Player )
+			{
+				GenerateMapListing( 10 );
+				AddPageButton( "<basefont color=#FFFFFF>Staff Only</basefont>", null, p++, 10 );
+			}
+
+			if ( WT.Custom )
+			{
+				GenerateMapListing( 11 );
+				AddPageButton( "<basefont color=#FFFFFF>Custom Destinations</basefont>", null, p++, 11 );
+			}
+		}
+
+		private void AddPageButton( string text, Map map, int offset, int page )
+		{
+			string label;
+			if ( map != null )
+				label = String.Format( "<basefont color=#{0}>{1}</basefont>", MapHue( map ), text );
+			else
+				label = text;
+			//AddHtml( 30, 100 + ((offset - 1) * 25), 150, 20, label, false, false );
+			//AddButton( 10, 100 + ((offset - 1) * 25), 2117, 2118, page, GumpButtonType.Reply, 0 );
+			AddHtml( 30, 18 + ((offset - 1) * 25), 150, 20, label, false, false );
+			
+			
+			AddButton( 10, 20 + ((offset - 1) * 25), 2117, 2118, page, GumpButtonType.Reply, 0 );
+		}
+
+		private static MapEntry GetEntry( string name, int id )
+		{
+			MapEntry[] me = (MapEntry[])WorldTeleporter.GlobalEntries[name];
+
+			if ( me != null )
+			{
+				if ( id < 0 || id >= me.Length )
+					id = 0;
+				return me[id];
+			}
+
+			return null;
+		}
+
+		private void GenerateMapListing( int page )
+		{
+		
+			
+		
+			if ( m_Page == 0 )
+				m_Page = page;
+			else if ( page != m_Page )
+				return;
+
+			string name = m_Entries[page-1];
+
+			MapEntry[] me = (MapEntry[])WorldTeleporter.GlobalEntries[name];
+			if ( me == null )
+				return;
+
+			int offset = m_Page * 100;
+			bool gates = name == "Public Moongates";
+			for (int i = 0, l = 0; i < me.Length; i++ )
+			{
+				MapEntry entry = me[i];
+
+				if ( ( (gates || name == "Felucca") && entry.Map == Map.Felucca && !m_WorldTeleporter.Felucca) )
+					continue;
+				else if ( (gates || name == "Trammel") && entry.Map == Map.Trammel && (!m_WorldTeleporter.Trammel || !m_Reds))
+					continue;
+				else if ( entry.Map == Map.Ilshenar && (!m_WorldTeleporter.Ilshenar || !m_HasLBR || !m_Reds))
+					continue;
+				else if (entry.Map == Map.Malas && (!Core.AOS || !m_HasAOS || !m_WorldTeleporter.Malas || !m_Reds))
+					continue;
+				else if (entry.Map == Map.Tokuno && (!Core.SE || !m_HasSE || !m_WorldTeleporter.Tokuno || !m_Reds))
+					continue;
+				else
+				{
+					string label = String.Format( "<basefont color=#{0}>{1}</basefont>", MapHue( entry.Map ), entry.Name );
+					//AddHtml( 180, 20+(l*20), 150, 20, label, false, false );
+					//AddButton( 145, 20+(l*20), 4015, 4016, (i+offset), GumpButtonType.Reply, 0 );
+					AddHtml( 220, 23+(l*20), 150, 20, label, false, false );
+					
+				
+					AddButton( 185, 20+(l*20), 4005, 4006, (i+offset), GumpButtonType.Reply, 0 );
+						///button from staff runebook
+					//AddButton(220, 20+(l*20), 4009, 4010, (i+offset), GumpButtonType.Reply, 0, null, "gate"); 
+					//
+					l++;
+				}
+			}
+		}
+
+		private string MapHue( Map map )
+		{
+			if ( map == null ) return "FFFFFF";
+				//return "101010";
+			if ( map == Map.Felucca ) return "FFFFFF";
+				//return "FF0000";
+			else if ( map == Map.Trammel ) return "FFFFFF";
+				//return "0000FF";
+			else if ( map == Map.Ilshenar ) return "FFFFFF";
+				//return "008000";
+			else if ( map == Map.Malas )
+				return "FFFFFF";
+			else return "FFFFFF";
+				//return "FF00FF";
+		}
+
+		private static string[] m_Entries = new string[]
+		{
+			"Trammel", "Trammel Dungeons", "Felucca", "Felucca Dungeons",
+			"Public Moongates", "Ilshenar", "Ilshenar Shrines", "Malas",
+			"Tokuno", "Staff", "Custom"
+		};
+
+		public override void OnResponse( NetState state, RelayInfo info )
+		{
+			int button = info.ButtonID;
+			int[] butt = info.Switches;
+
+			
+			Mobile from = state.Mobile;
+			
+			if ( info.ButtonID <= 0 || from == null || from.Deleted || m_WorldTeleporter == null || m_WorldTeleporter.Deleted )
+				return;
+
+			int id = info.ButtonID / 100;
+			int count = info.ButtonID % 100;
+
+			if ( id == 0 && count < 13 )
+			{
+				from.SendGump( new WorldTeleporterGump( from, m_WorldTeleporter, count ) );
+				return;
+			}
+
+			//Invalid checks
+			if ( id < 1 || id > 13 || (id == 10 && from.AccessLevel < AccessLevel.GameMaster) )
+				id = 1;
+
+			string name = m_Entries[id-1];
+
+			MapEntry entry = GetEntry( name, count );
+			
+			
+/*
+		switch( button )
+		{
+			case 0:{ break; }
+			case 100:
+			{//from.MoveToWorld( entry.Destination, entry.Map );
+			//new PKLGate( ).MoveToWorld( new Point3D( 5404, 85, 10), Map );
+
+					  SR_RuneGate firstGate = new SR_RuneGate( entry.Destination, entry.Map);
+                      firstGate.MoveToWorld(from.Location, from.Map);
+					  
+					  //SR_RuneGate secondGate = new SR_RuneGate(from.Location, from.Map);
+                               // secondGate.MoveToWorld(entry.Destination, entry.Map);
+
+                                //Effects.PlaySound(rune.TargetLoc, rune.TargetMap, 0x20E);
+					break;
+			}
+		*/
+			//default:
+			
+			
+			bool gates = name == "Public Moongates";
+
+			
+			if ( entry == null )
+				from.SendMessage( "Error: Invalid Button Response - No Map Entries" );
+			else if ( ( (gates || name == "Felucca") && entry.Map == Map.Felucca && !m_WorldTeleporter.Felucca) )
+				from.SendMessage( "Error: Invalid Button Response - Felucca Disabled" );
+			else if ( (gates || name == "Trammel") && entry.Map == Map.Trammel && (!m_WorldTeleporter.Trammel || !m_Reds))
+				from.SendMessage( "Error: Invalid Button Response - Trammel Disabled" );
+			else if ( (name == "Ilshenar" ) && entry.Map == Map.Ilshenar && (!m_WorldTeleporter.Ilshenar || !m_HasLBR || !m_Reds))
+				from.SendMessage( "Error: Invalid Button Response - Ilshenar Disabled" );
+			else if (entry.Map == Map.Malas && (!Core.AOS || !m_HasAOS || !m_WorldTeleporter.Malas || !m_Reds))
+				from.SendMessage( "Error: Invalid Button Response - Malas Disabled" );
+			else if (entry.Map == Map.Tokuno && (!Core.SE || !m_HasSE || !m_WorldTeleporter.Tokuno || !m_Reds))
+				from.SendMessage( "Error: Invalid Button Response - Tokuno Disabled" );
+			else if ( !from.InRange( m_WorldTeleporter.GetWorldLocation(), 1 ) || from.Map != m_WorldTeleporter.Map )
+				from.SendLocalizedMessage( 1019002 ); // You are too far away to use the gate.
+			else if ( from.Criminal )
+				from.SendLocalizedMessage( 1005561, "", 0x22 ); // Thou'rt a criminal and cannot escape so easily.
+			else if ( Server.Spells.SpellHelper.CheckCombat( from ) )
+				from.SendLocalizedMessage( 1005564, "", 0x22 ); // Wouldst thou flee during the heat of battle??
+			else if ( from.Spell != null )
+				from.SendLocalizedMessage( 1049616 ); // You are too busy to do that at the moment.
+			else if ( from.Map == entry.Map && from.InRange( entry.Destination, 1 ) )
+				from.SendLocalizedMessage( 1019003 ); // You are already there.
+			
+			
+			
+			else
+			{
+			/*
+				if ( xo == 220 )
+				{
+					 SR_RuneGate firstGate = new SR_RuneGate( entry.Destination, entry.Map);
+						  firstGate.MoveToWorld(from.Location, from.Map);
+				
+				}
+			*/	
+				BaseCreature.TeleportPets( from, entry.Destination, entry.Map );
+
+				from.Combatant = null;
+
+				from.MoveToWorld( entry.Destination, entry.Map );
+
+				if ( !from.Hidden || from.AccessLevel == AccessLevel.Player )
+					Effects.PlaySound( entry.Destination, entry.Map, 0x1FE );
+			}
+		//	break;
+			
+			
+				
+		//}
+		}	
+	}
+
+	public class MapEntry
+	{
+		private string m_Name;
+		private Point3D m_Destination;
+		private Map m_Map;
+
+		public string Name{ get{ return m_Name; } }
+		public Point3D Destination{ get{ return m_Destination; } }
+		public Map Map{ get{ return m_Map; } }
+
+		public MapEntry( string name, Point3D p, Map map)
+		{
+			m_Name = name;
+			m_Destination = p;
+			m_Map = map;
+		}
+	}
+
+	public class WorldTeleGenCommand
+	{
+		public static void Initialize()
+		{
+			CommandSystem.Register( "WorldTeleGen", AccessLevel.Administrator, new CommandEventHandler( WorldTeleGen_OnCommand ) );
+		}
+
+		[Usage( "WorldTeleGen" )]
+		[Description( "Generates world teleporters. Removes all old non movable world teleporters." )]
+		public static void WorldTeleGen_OnCommand( CommandEventArgs e )
+		{
+			World.Broadcast( 0x35, true, "Generating world teleporters.");		
+			DeleteWorldTele();
+			World.Broadcast( 0x35, true, "Finished generating {0} world teleporters.", WorldTeleporter.GenerateWorldTeleporters() );
+		}
+
+		private static void DeleteWorldTele()
+		{
+			ArrayList list = new ArrayList();
+
+			foreach ( Item item in World.Items.Values )
+			{
+				if ( item is WorldTeleporter && !item.Movable)
+					list.Add( item );
+			}
+
+			foreach ( Item item in list )
+				item.Delete();
+
+			if ( list.Count > 0 )
+				World.Broadcast( 0x35, true, "{0} world teleporters removed.", list.Count );
+		}
+	}
+}
