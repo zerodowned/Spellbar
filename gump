@@ -1,0 +1,846 @@
+using System;
+using Server;
+using Server.Gumps;
+using Server.Network;
+using System.Xml;
+using Server.Engines.XmlSpawner2;
+using Joeku.SR;
+
+namespace Server.Gumps
+{
+    public class TravelStoneGump : Gump
+    {
+		
+		Mobile caller;
+		 
+		public int m_Page;
+		public int page = 0;
+		
+		public TravelStone_XMLatt m_Stone;
+		
+		public TravelStoneGump( Mobile from, int page, TravelStone_XMLatt xmlstone ) : base( 0,0 )
+        {
+			m_Stone = xmlstone;
+			//PlayerMobile player = (PlayerMobile)from;
+			 m_Page = page;
+			
+			this.Closable=true;
+			this.Disposable=true;
+			this.Dragable=true;
+			this.Resizable=false;
+
+			AddPage(0);
+			//AddBackground( 0, 0, 450, 404, 5054 ); //
+			AddBackground( 0, 0, 139, 302, 2600 ); // left panel
+			AddBackground( 143, 2, 312, 479, 9200 ); // right panel
+			
+			AddImageTiled(148, 35, 301, 441, 2624);
+			AddImage(147, 220, 1418); // castle
+			
+			
+			
+			int PageLabelHue = 0;
+			
+			if( m_Stone.CurrentPage == 1 ) { PageLabelHue = 63; } else { PageLabelHue = 1153; }
+			AddButton( 20, 53, 2117, 2118, 1, GumpButtonType.Reply, 0 );
+			AddLabel(40, 50, PageLabelHue, @"Trammel");
+			
+			if( m_Stone.CurrentPage == 2 ) { PageLabelHue = 63; } else { PageLabelHue = 1153; }
+			AddButton( 20, 76, 2117, 2118, 2, GumpButtonType.Reply, 0 );
+			AddLabel(41, 73, PageLabelHue, @"Felucca");
+			
+			if( m_Stone.CurrentPage == 3 ) { PageLabelHue = 63; } else { PageLabelHue = 1153; }
+			AddButton( 20, 99, 2117, 2118, 3, GumpButtonType.Reply, 0 );
+			AddLabel(40, 96, PageLabelHue, @"Ilshenar");
+			
+			if( m_Stone.CurrentPage == 4 ) { PageLabelHue = 63; } else { PageLabelHue = 1153; }
+			AddButton( 20, 122, 2117, 2118, 4, GumpButtonType.Reply, 0 );
+			AddLabel(40, 119, PageLabelHue, @"Malas");
+			
+			if( m_Stone.CurrentPage == 5 ) { PageLabelHue = 63; } else { PageLabelHue = 1153; }
+			AddButton( 20, 145, 2117, 2118, 5, GumpButtonType.Reply, 0 );
+			AddLabel(40, 142, PageLabelHue, @"Tokuno");
+			
+			if( m_Stone.CurrentPage == 6 ) { PageLabelHue = 63; } else { PageLabelHue = 1153; }
+			AddButton( 20, 168, 2117, 2118, 6, GumpButtonType.Reply, 0 );
+			AddLabel(40, 165, PageLabelHue, @"Ter Mur");
+			
+			AddHtml( 250, 9, 116, 21, @"<BASEFONT SIZE=5 COLOR=#FFFFFF>Travel Stone</BASEFONT>", (bool)false, (bool)false);
+			AddButton( 428, 10, 22150, 22150, 0, GumpButtonType.Reply, 0 );
+			
+			if( m_Stone.GateSeletion == false ){
+			AddButton( 22, 225, 4009, 4009, 7, GumpButtonType.Reply, 0 );
+			AddLabel(56, 226, 1153, @"Gateway");
+			 }
+			
+			if( m_Stone.GateSeletion == true ){
+			AddButton( 22, 225, 4002, 4002, 8, GumpButtonType.Reply, 0 );
+			AddLabel(56, 226, 1153, @"Teleport");
+			 }
+			
+			int ButtonID = 13;
+		
+			int Unpressed = 0;
+			int Pressed = 0;
+			
+			//buttons
+			int Xo = 161;
+			int Yo = 45;
+			int Yplus = 25;
+			
+			//labels
+			int Xol = 196;
+			int Yol = 45;
+			
+			//options - buttons
+			int Xoob = 318;
+			int Yoob = 60;
+			int Yoobplus = 23;
+			
+			//options - labels 
+			int Xool = 340;
+			int Yool = 57;
+			
+			//green
+			int OptionsUnpressed = 11400;
+			int OptionsPressed = 11400;
+			//red
+			int RedOptionsUnpressed = 11410;
+			int RedOptionsPressed = 11410;
+	
+			if( m_Stone.GateSeletion == true ) { Unpressed = 4009; Pressed = 4008; }
+			else { Unpressed = 4003; Pressed = 4002; }
+			
+			
+/////////////////////////////////////
+/// each case represents a "page"///
+////////////////////////////////////		   
+            switch (page)
+            {
+				
+				
+				case 1: //Trammel
+                    {
+						AddBackground( 299, 41, 126, 128, 9250 ); // right panel - options
+						AddAlphaRegion( 148, 35, 301, 441 );
+						
+						if( m_Stone.Options == 0 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 9, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 9, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Towns");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 1 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 10, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 10, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Dungeons");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 2 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 11, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 11, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Shrines");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 3 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 12, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 12, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Moongates");Yool = Yool + Yoobplus;
+						
+					///////////////////
+					//Trammel Towns
+						if( m_Stone.Options == 0 ){
+							AddButton( Xo, Yo, Unpressed, Pressed, ButtonID, GumpButtonType.Reply, 0 );Yo = Yo + Yplus; ButtonID++;
+							AddLabel(Xol, Yol, 1153, @"Britain");Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, ButtonID, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus; ButtonID++;
+							AddLabel(Xol, Yol, 1153, @"Bucs Den"); Yol = Yol + Yplus;
+
+							AddButton( Xo, Yo, Unpressed, Pressed, ButtonID, GumpButtonType.Reply, 0 );Yo = Yo + Yplus; ButtonID++;
+							AddLabel(Xol, Yol, 1153, @"Cove"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Delucia"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"New Haven"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Jhelom"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Magincia"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Minoc"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Moonglow"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Nujel'm"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Papua"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Serpents Hold"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Skara Brae"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Trinsic"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Vesper"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Wind"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Yew"); Yol = Yol + Yplus;
+						}
+						////////////////
+						//Trammel Dungeons
+						
+						if( m_Stone.Options == 1 ){
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Covetous");Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Daemon Temple"); Yol = Yol + Yplus;
+
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Deceit"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Despise"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Destard"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Fire"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Hythloth"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Ice"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Ophidian Temple"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Orc Caves"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Shame"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Solen Hive"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Terathan Keep"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Wrong"); Yol = Yol + Yplus;
+						}
+						///////////////
+						//Trammel Shrines
+						
+						if( m_Stone.Options == 2 ){
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Chaos");Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Compassion"); Yol = Yol + Yplus;
+
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Honesty"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Honor"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Humility"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Justice"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Sacrifice"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Spirituality"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Valor"); Yol = Yol + Yplus;
+						}
+						
+						///////////////
+						//Trammel Moongates
+						
+						if( m_Stone.Options == 3 ){
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Britain");Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"New Haven"); Yol = Yol + Yplus;
+
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Jhelom"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Magincia"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Minoc"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Moonglow"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Skara Brae"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Trinsic"); Yol = Yol + Yplus;
+							
+							AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+							AddLabel(Xol, Yol, 1153, @"Yew"); Yol = Yol + Yplus;
+						}
+						break;
+					}
+				case 2: //Felucca
+                    {
+						AddBackground( 299, 41, 126, 128, 9250 ); // right panel - options
+						AddAlphaRegion( 148, 35, 301, 441 );
+					
+						if( m_Stone.Options == 0 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 9, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 9, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Towns");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 1 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 10, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 10, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Dungeons");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 2 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 11, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 11, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Shrines");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 3 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 12, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 12, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Moongates");Yool = Yool + Yoobplus;
+				///////////////////
+				//Felucca Towns
+				
+					if( m_Stone.Options == 0 ){
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Britain"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Bucs Den"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Cove"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Delucia"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Jhelom"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Magincia"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Minoc"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Moonglow"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Nujel'm"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ocllo"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Papua"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Serpents Hold"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Skara Brae"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Trinsic"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Vesper"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Wind"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Yew"); Yol = Yol + Yplus;
+					}	
+					////////////////
+					//Felucca Dungeons
+					
+					if( m_Stone.Options == 1 ){
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Covetous");Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Daemon Temple"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Deceit"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Despise"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Destard"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Fire"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Hythloth"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ice"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ophidian Temple"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Orc Caves"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Shame"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Solen Hive"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Terathan Keep"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Wrong"); Yol = Yol + Yplus;
+					}
+					///////////////
+					//Felucca Shrines
+					
+					if( m_Stone.Options == 2 ){
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Chaos");Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Compassion"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Honesty"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Honor"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Humility"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Justice"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Sacrifice"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Spirituality"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Valor"); Yol = Yol + Yplus;
+					}
+					
+					///////////////
+					//Felucca Moongates
+					
+					if( m_Stone.Options == 3 ){
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Britain");Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Buccaneer's Den"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Jhelom"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Magincia"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Minoc"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Moonglow"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Skara Brae"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Trinsic"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Yew"); Yol = Yol + Yplus;
+					}
+
+						break;
+					}
+				case 3: //Ilshenar
+                    {
+						AddBackground( 299, 41, 126, 128, 9250 ); // right panel - options
+						AddAlphaRegion( 148, 35, 301, 441 );
+			
+						if( m_Stone.Options == 0 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 9, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 9, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Towns");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 1 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 10, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 10, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Dungeons");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 2 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 11, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 11, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Caves");Yool = Yool + Yoobplus;
+						
+						if( m_Stone.Options == 3 ){
+						AddButton( Xoob, Yoob, OptionsUnpressed, OptionsPressed, 12, GumpButtonType.Reply, 0 );}
+						else { AddButton( Xoob, Yoob, RedOptionsUnpressed, RedOptionsPressed, 12, GumpButtonType.Reply, 0 ); }
+						Yoob = Yoob + Yoobplus;
+						AddLabel(Xool, Yool, 1153, @"Shrines");Yool = Yool + Yoobplus;
+				///////////////////
+				// Ilsh Towns
+					if ( m_Stone.Options == 0) {
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ancient Citadel"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Lakeshire"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Mistas"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Montor"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Req Volon"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Savage Camp"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Terort Skitas"); Yol = Yol + Yplus;
+					}
+				///////////////////
+				// Ilsh Dungeons
+					if ( m_Stone.Options == 1) {
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ankh Dungeon"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Blood Dungeon"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Exodus Dungeon"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Gargoyle City"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Lakeshire"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Mistas"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Montor"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Rock Dungeon"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Savage Camp"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Sorceror's Dungeon"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Spectre Dungeon"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Spider Cave"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Wisp Dungeon"); Yol = Yol + Yplus;
+					}
+					///////////////////
+				// Ilsh Caves
+					if ( m_Stone.Options == 2) {
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ancient Lair"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Lizard Passage"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Mushroom Cave"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Rat Cave"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Spider Cave"); Yol = Yol + Yplus;
+					}
+					///////////////
+					//Ilsh Shrines
+					
+					if( m_Stone.Options == 3 ){
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Compassion"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Honesty"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Honor"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Humility"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Justice"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Sacrifice"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Spirituality"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Valor"); Yol = Yol + Yplus;
+					}
+						break;
+					}
+				case 4: //Malas
+                    {
+						AddAlphaRegion( 148, 35, 301, 441 );
+					
+				///////////////////
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Doom"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Hanse's Hostel"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Luna"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Ruined Temple"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Umbra"); Yol = Yol + Yplus;
+						
+						break;
+					}
+				case 5: //Tokuno
+                    {
+					
+						AddAlphaRegion( 148, 35, 301, 441 );
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Bushido Dojo"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Crane Marsh"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Fan Dancer's Dojo"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Isamu-Jima"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Makoto-Jima"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Homare-Jima"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Makoto Desert"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Makoto Zento"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Mt. Sho Castle"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Valor Shrine"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Yomotsu Mine"); Yol = Yol + Yplus;
+					
+						break;
+					}
+			
+				case 6: //TerMur
+                    {
+						
+						AddAlphaRegion( 148, 35, 301, 441 );
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Dugan");Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 ); Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Holy City"); Yol = Yol + Yplus;
+
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Royal City"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Tomb of Kings"); Yol = Yol + Yplus;
+						
+						AddButton( Xo, Yo, Unpressed, Pressed, 1, GumpButtonType.Reply, 0 );Yo = Yo + Yplus;
+						AddLabel(Xol, Yol, 1153, @"Underworld"); Yol = Yol + Yplus;
+						
+						break;
+					} 
+				}
+			}
+			
+			public void Transport( Mobile m, int x, int y, int z, Map map )
+			{
+				
+				if( m_Stone.GateSeletion == false )
+					{ m.MoveToWorld( new Point3D(x, y, z), map ); }
+				else{
+					SR_RuneGate firstGate = new SR_RuneGate( new Point3D(x, y, z), map);
+					firstGate.MoveToWorld(m.Location, m.Map);
+				}
+			
+			}
+			
+			
+			public override void OnResponse( NetState sender, RelayInfo info )
+			{
+				Mobile from = sender.Mobile;
+				int ButtonID = 13;
+
+				switch(info.ButtonID)
+				{
+					case 0://cancel  
+						from.CloseGump( typeof( TravelStoneGump ) );
+						break; 
+					
+					case 1://trammel
+						page = 1;
+						m_Stone.CurrentPage = 1;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					
+					case 2://trammel
+						page = 2;
+						m_Stone.CurrentPage = 2;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+						
+					case 3://trammel
+						page = 3;
+						m_Stone.CurrentPage = 3;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+						
+					case 4://trammel
+						page = 4;
+						m_Stone.CurrentPage = 4;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+						
+					case 5://trammel
+						page = 5;
+						m_Stone.CurrentPage = 5;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					
+					case 6://trammel
+						page = 6;
+						m_Stone.CurrentPage = 6;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					case 7://gate to tele button
+						m_Stone.GateSeletion = true;
+						page = m_Stone.CurrentPage;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					case 8://gate to tele button
+						m_Stone.GateSeletion = false;
+						page = m_Stone.CurrentPage;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;						
+					case 9://options 0
+						m_Stone.Options = 0;
+						page = m_Stone.CurrentPage;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					case 10://options 1
+						m_Stone.Options = 1;
+						page = m_Stone.CurrentPage;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					case 11://options 2
+						m_Stone.Options = 2;
+						page = m_Stone.CurrentPage;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					case 12://options 3
+						m_Stone.Options = 3;
+						page = m_Stone.CurrentPage;
+						from.SendGump(new TravelStoneGump(from, page, m_Stone ));
+						break;
+					case 13:
+						Transport( from, 1434, 1699, 2, Map.Trammel);
+						break;
+					case 14:
+						Transport( from, 2705, 2162, 0, Map.Trammel);
+						break;
+					case 15:
+						Transport( from, 2237, 1214, 0, Map.Trammel);
+						break;
+						
+				}//switch case
+				
+				
+			}//on response
+			
+	}
+}
